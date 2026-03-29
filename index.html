@@ -14,7 +14,7 @@
       direction: rtl;
     }
     .container {
-      max-width: 800px;
+      max-width: 900px;
       margin: 40px auto;
       background: #020617;
       border-radius: 12px;
@@ -55,11 +55,6 @@
       font-size: 0.95rem;
       box-sizing: border-box;
     }
-    input[type="text"]:focus, input[type="number"]:focus {
-      outline: none;
-      border-color: #38bdf8;
-      box-shadow: 0 0 0 1px #38bdf8;
-    }
     button {
       margin-top: 10px;
       padding: 8px 16px;
@@ -81,7 +76,7 @@
       margin-top: 10px;
     }
     .card {
-      flex: 1 1 320px;
+      flex: 1 1 350px;
       background: #020617;
       border-radius: 10px;
       padding: 14px 16px;
@@ -93,201 +88,135 @@
       border-radius: 8px;
       background: #020617;
       border: 1px dashed #4b5563;
-      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-family: "JetBrains Mono", monospace;
       font-size: 0.9rem;
       word-wrap: break-word;
     }
-    .small {
-      font-size: 0.8rem;
-      color: #6b7280;
-      margin-top: 4px;
+    .copy-btn {
+      margin-top: 6px;
+      background: #4ade80;
+      color: #020617;
     }
-    .inline {
-      display: inline-block;
-      margin-inline-start: 8px;
+    .copy-btn:hover {
+      background: #22c55e;
     }
   </style>
 </head>
 <body>
+
   <div class="container">
     <h1>النظام الترددي اللغوي</h1>
-    <p>ترميز الكلمات العربية إلى ترددات، والعكس، وفق النظام الذي صممته.</p>
+
+    <h2>إعدادات النظام</h2>
+    <label>f₀ (هرتز):</label>
+    <input id="f0Input" type="number" value="1000000">
+
+    <label>Δf (هرتز):</label>
+    <input id="dfInput" type="number" step="0.0001" value="0.0001">
 
     <div class="row">
+
       <!-- كلمة → تردد -->
       <div class="card">
         <h2>تحويل كلمة إلى تردد</h2>
-        <p>الأساس 32، طول أقصى 8 حروف، f₀ = 1 MHz، Δf = 10⁻⁴ Hz.</p>
-        <label for="wordInput">أدخل كلمة عربية (حتى 8 حروف):</label>
-        <input id="wordInput" type="text" placeholder="مثال: سبحان، الله، نبيل، يزن">
-        <button onclick="encodeWord()">تحويل إلى تردد</button>
-        <div class="output" id="wordToFreqOutput">التردد سيظهر هنا…</div>
-        <div class="small" id="wordDebug"></div>
+        <label>أدخل كلمة عربية:</label>
+        <input id="wordInput" type="text" placeholder="مثال: سبحان، نبيل، يزن">
+        <button onclick="encodeWord()">تحويل</button>
+        <div class="output" id="wordToFreqOutput">—</div>
+        <button class="copy-btn" onclick="copyFreq()">نسخ التردد</button>
       </div>
 
       <!-- تردد → كلمة -->
       <div class="card">
         <h2>تحويل تردد إلى كلمة</h2>
-        <p>أدخل التردد بالهرتز (Hz) ضمن المجال التقريبي للنظام.</p>
-        <label for="freqInput">أدخل التردد (Hz):</label>
-        <input id="freqInput" type="number" placeholder="مثال: 1000006 أو 2300005">
-        <button onclick="decodeFreq()">تحويل إلى كلمة</button>
-        <div class="output" id="freqToWordOutput">الكلمة ستظهر هنا…</div>
-        <div class="small" id="freqDebug"></div>
+        <label>أدخل التردد (Hz):</label>
+        <input id="freqInput" type="number" placeholder="مثال: 2300005">
+        <button onclick="decodeFreq()">تحويل</button>
+        <div class="output" id="freqToWordOutput">—</div>
       </div>
+
     </div>
   </div>
 
-  <script>
-    // ثوابت النظام
-    const B = 32;                 // الأساس
-    const LMAX = 8;               // أقصى طول للكلمة
-    const F0 = 1000000;         // f0 = 1 MHz
-    const DF = 1e-4;              // Δf = 10^-4 Hz
+<script>
+  const B = 32;
+  const LMAX = 8;
 
-    // جدول الحروف: index -> حرف
-    const indexToChar = {
-      0: "",      // حشو
-      1: "ا",
-      2: "ب",
-      3: "ت",
-      4: "ث",
-      5: "ج",
-      6: "ح",
-      7: "خ",
-      8: "د",
-      9: "ذ",
-      10: "ر",
-      11: "ز",
-      12: "س",
-      13: "ش",
-      14: "ص",
-      15: "ض",
-      16: "ط",
-      17: "ظ",
-      18: "ع",
-      19: "غ",
-      20: "ف",
-      21: "ق",
-      22: "ك",
-      23: "ل",
-      24: "م",
-      25: "ن",
-      26: "ه",
-      27: "و",
-      28: "ي"
-      // 29–31 محجوزة
-    };
+  const indexToChar = {
+    0:"",1:"ا",2:"ب",3:"ت",4:"ث",5:"ج",6:"ح",7:"خ",
+    8:"د",9:"ذ",10:"ر",11:"ز",12:"س",13:"ش",14:"ص",
+    15:"ض",16:"ط",17:"ظ",18:"ع",19:"غ",20:"ف",21:"ق",
+    22:"ك",23:"ل",24:"م",25:"ن",26:"ه",27:"و",28:"ي"
+  };
 
-    // عكس الجدول: حرف -> index
-    const charToIndex = {};
-    for (const [i, ch] of Object.entries(indexToChar)) {
-      if (ch) charToIndex[ch] = parseInt(i, 10);
+  const charToIndex = {};
+  for (const [i,ch] of Object.entries(indexToChar)) {
+    if (ch) charToIndex[ch] = parseInt(i);
+  }
+
+  function normalizeWord(w){ return w.replace(/\s+/g,"").trim(); }
+
+  function wordToCode(word){
+    const w = normalizeWord(word);
+    const c = new Array(LMAX).fill(0);
+    let pos = 0;
+    for (let i = w.length - 1; i >= 0; i--){
+      const idx = charToIndex[w[i]];
+      if (idx === undefined) throw new Error("حرف غير مدعوم: " + w[i]);
+      c[pos++] = idx;
     }
-
-    // تنظيف الكلمة: إزالة مسافات، تشكيل، إلخ (مبدئياً: فقط مسافات)
-    function normalizeWord(word) {
-      return word.replace(/\s+/g, "").trim();
+    let C = 0n;
+    for (let i = 0; i < LMAX; i++){
+      C += BigInt(c[i])  (BigInt(B) * BigInt(i));
     }
+    return C;
+  }
 
-    // تحويل كلمة إلى كود عددي C
-    function wordToCode(word) {
-      const w = normalizeWord(word);
-      if (w.length === 0) return 0;
-      if (w.length > LMAX) {
-        throw new Error("الكلمة أطول من الحد الأقصى المسموح به (" + LMAX + " حروف).");
-      }
-
-      // نملأ الخانات من اليمين لليسار
-      const c = new Array(LMAX).fill(0);
-      let pos = 0;
-      for (let i = w.length - 1; i >= 0; i--) {
-        const ch = w[i];
-        const idx = charToIndex[ch];
-        if (idx === undefined) {
-          throw new Error("حرف غير مدعوم في النظام: " + ch);
-        }
-        c[pos] = idx;
-        pos++;
-      }
-
-      // حساب C = sum(c_i * B^i)
-      let C = 0n;
-      for (let i = 0; i < LMAX; i++) {
-        C += BigInt(c[i])  (BigInt(B) * BigInt(i));
-      }
-      return { C, digits: c };
+  function codeToWord(Cbig){
+    let C = BigInt(Cbig);
+    const digits = [];
+    for (let i = 0; i < LMAX; i++){
+      digits.push(Number(C % BigInt(B)));
+      C /= BigInt(B);
     }
-
-    // تحويل كود عددي C إلى كلمة
-    function codeToWord(Cbig) {
-      let C = BigInt(Cbig);
-      const digits = [];
-      for (let i = 0; i < LMAX; i++) {
-        const d = C % BigInt(B);
-        digits.push(Number(d));
-        C = C / BigInt(B);
-      }
-      // الآن digits من الأقل أهمية إلى الأعلى
-      // نقرأ من الأعلى إلى الأدنى
-      let word = "";
-      for (let i = LMAX - 1; i >= 0; i--) {
-        const idx = digits[i];
-        const ch = indexToChar[idx] || "";
-        word += ch;
-      }
-      return { word, digits };
+    let w = "";
+    for (let i = LMAX - 1; i >= 0; i--){
+      w += indexToChar[digits[i]] || "";
     }
+    return w;
+  }
 
-    // كلمة → تردد
-    function encodeWord() {
-      const input = document.getElementById("wordInput").value;
-      const out = document.getElementById("wordToFreqOutput");
-      const dbg = document.getElementById("wordDebug");
-      out.textContent = "";
-      dbg.textContent = "";
+  function encodeWord(){
+    const f0 = Number(document.getElementById("f0Input").value);
+    const df = Number(document.getElementById("dfInput").value);
+    const word = document.getElementById("wordInput").value;
 
-      try {
-        const { C, digits } = wordToCode(input);
-        const Cnum = Number(C); // قد يكون كبيراً لكن هنا ما زلنا في حدود آمنة
-        const f = F0 + Cnum * DF;
-        out.textContent = التردد ≈ ${f.toFixed(6)} Hz  (≈ ${(f/1e6).toFixed(6)} MHz);
-        dbg.textContent = الكود C = ${C.toString()} ، الخانات (من c0 إلى c7) = [${digits.join(", ")}];
-      } catch (e) {
-        out.textContent = "خطأ: " + e.message;
-      }
+    try {
+      const C = wordToCode(word);
+      const f = f0 + Number(C) * df;
+      document.getElementById("wordToFreqOutput").textContent =
+        ${f.toFixed(6)} Hz;
+    } catch(e){
+      document.getElementById("wordToFreqOutput").textContent = "خطأ: " + e.message;
     }
+  }
 
-    // تردد → كلمة
-    function decodeFreq() {
-      const input = document.getElementById("freqInput").value;
-      const out = document.getElementById("freqToWordOutput");
-      const dbg = document.getElementById("freqDebug");
-      out.textContent = "";
-      dbg.textContent = "";
+  function decodeFreq(){
+    const f0 = Number(document.getElementById("f0Input").value);
+    const df = Number(document.getElementById("dfInput").value);
+    const f = Number(document.getElementById("freqInput").value);
 
-      const f = Number(input);
-      if (!f || isNaN(f)) {
-        out.textContent = "الرجاء إدخال تردد صحيح.";
-        return;
-      }
+    const C = Math.round((f - f0) / df);
+    const word = codeToWord(BigInt(C));
+    document.getElementById("freqToWordOutput").textContent = word || "—";
+  }
 
-      // C = (f - f0) / Δf
-      const Cfloat = (f - F0) / DF;
-      const Crounded = Math.round(Cfloat);
+  function copyFreq(){
+    const text = document.getElementById("wordToFreqOutput").textContent;
+    navigator.clipboard.writeText(text);
+  }
+</script>
 
-      if (Crounded < 0) {
-        out.textContent = "هذا التردد أقل من f₀ ولا يقابل أي كلمة في النظام.";
-        return;
-      }
-
-      const Cbig = BigInt(Crounded);
-      const { word, digits } = codeToWord(Cbig);
-
-      out.textContent = الكلمة الناتجة: "${word || "لا شيء (كلها حشو)"}";
-      dbg.textContent = C ≈ ${Cfloat.toFixed(2)} → أقرب عدد صحيح = ${Crounded} ، الخانات (من c0 إلى c7) = [${digits.join(", ")}];
-    }
-  </script>
 </body>
 </html>
-` 
+`
