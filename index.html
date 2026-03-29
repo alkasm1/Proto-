@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>النظام الترددي اللغوي</title>
+
+  <style>
+    body {
+      font-family: "Cairo", sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background: #161b22;
+      border-radius: 14px;
+      padding: 28px;
+      border: 1px solid #30363d;
+      box-shadow: 0 0 40px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      text-align: center;
+      color: #58a6ff;
+      margin-bottom: 20px;
+      font-size: 2rem;
+    }
+
+    h2 {
+      color: #79c0ff;
+      margin-bottom: 10px;
+    }
+
+    label {
+      margin-top: 10px;
+      display: block;
+      font-size: 0.95rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: 1px solid #30363d;
+      background: #0d1117;
+      color: #e6edf3;
+      font-size: 1rem;
+    }
+
+    button {
+      margin-top: 12px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      background: #238636;
+      color: white;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #2ea043;
+    }
+
+    .secondary-btn {
+      background: #58a6ff;
+      color: #0d1117;
+    }
+
+    .secondary-btn:hover {
+      background: #79c0ff;
+    }
+
+    .output {
+      margin-top: 10px;
+      padding: 12px;
+      background: #0d1117;
+      border: 1px dashed #30363d;
+      border-radius: 8px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.95rem;
+    }
+
+    .row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .card {
+      flex: 1 1 350px;
+      background: #161b22;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #30363d;
+    }
+
+    /* نافذة المجال */
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: #161b22;
+      padding: 20px;
+      border-radius: 12px;
+      width: 350px;
+      border: 1px solid #30363d;
+      text-align: center;
+    }
+
+    .close-btn {
+      background: #da3633;
+      margin-top: 15px;
+    }
+
+    .close-btn:hover {
+      background: #f85149;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>النظام الترددي اللغوي</h1>
+
+    <h2>إعدادات النظام</h2>
+
+    <label>f₀ (هرتز):</label>
+    <input id="f0Input" type="number" value="1000000">
+
+    <label>Δf (هرتز):</label>
+    <input id="dfInput" type="number" step="0.0001" value="0.0001">
+
+    <button class="secondary-btn" onclick="showRange()">عرض المجال الترددي</button>
+
+    <div class="row">
+
+      <!-- كلمة → تردد -->
+      <div class="card">
+        <h2>تحويل كلمة إلى تردد</h2>
+        <label>أدخل كلمة عربية:</label>
+        <input id="wordInput" type="text" placeholder="مثال: ، نبيل، يزن">
+        <button onclick="encodeWord()">تحويل</button>
+        <div class="output" id="wordToFreqOutput">—</div>
+        <button class="secondary-btn" onclick="copyFreq()">نسخ التردد</button>
+      </div>
+
+      <!-- تردد → كلمة -->
+      <div class="card">
+        <h2>تحويل تردد إلى كلمة</h2>
+        <label>أدخل التردد (Hz):</label>
+        <input id="freqInput" type="number" placeholder="مثال: 2300005">
+        <button onclick="decodeFreq()">تحويل</button>
+        <div class="output" id="freqToWordOutput">—</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- نافذة المجال -->
+  <div class="modal" id="rangeModal">
+    <div class="modal-content">
+      <h2>المجال الترددي للنظام</h2>
+      <div id="rangeInfo" style="margin-top:10px; font-family:monospace;"></div>
+      <button class="close-btn" onclick="closeRange()">إغلاق</button>
+    </div>
+  </div>
+
+<script>
+  const B = 32;
+  const LMAX = 8;
+
+  const indexToChar = {
+    0:"",1:"ا",2:"ب",3:"ت",4:"ث",5:"ج",6:"ح",7:"خ",
+    8:"د",9:"ذ",10:"ر",11:"ز",12:"س",13:"ش",14:"ص",
+    15:"ض",16:"ط",17:"ظ",18:"ع",19:"غ",20:"ف",21:"ق",
+    22:"ك",23:"ل",24:"م",25:"ن",26:"ه",27:"و",28:"ي"
+  };
+
+  const charToIndex = {};
+  for (const [i,ch] of Object.entries(indexToChar)) {
+    if (ch) charToIndex[ch] = parseInt(i);
+  }
+
+  function normalizeWord(w){ return w.replace(/\s+/g,"").trim(); }
+
+  function wordToCode(word){
+    const w = normalizeWord(word);
+    const c = new Array(LMAX).fill(0);
+    let pos = 0;
+    for (let i = w.length - 1; i >= 0; i--){
+      const idx = charToIndex[w[i]];
+      if (idx === undefined) throw new Error("حرف غير مدعوم: " + w[i]);
+      c[pos++] = idx;
+    }
+    let C = 0n;
+    for (let i = 0; i < LMAX; i++){
+      C += BigInt(c[i]) * (BigInt(B) ** BigInt(i));
+    }
+    return C;
+  }
+
+  function codeToWord(Cbig){
+    let C = BigInt(Cbig);
+    const digits = [];
+    for (let i = 0; i < LMAX; i++){
+      digits.push(Number(C % BigInt(B)));
+      C /= BigInt(B);
+    }
+    let w = "";
+    for (let i = LMAX - 1; i >= 0; i--){
+      w += indexToChar[digits[i]] || "";
+    }
+    return w;
+  }
+
+  function encodeWord(){
+    const f0 = Number(document.getElementById("f0Input").value);
+    const df = Number(document.getElementById("dfInput").value);
+    const word = document.getElementById("wordInput").value;
+
+    try {
+      const C = wordToCode(word);
+      const f = f0 + Number(C) * df;
+
+      const Cmax = (BigInt(B) ** BigInt(LMAX)) - 1n;
+      const fmax = f0 + Number(Cmax) * df;
+
+      if (f > fmax) {
+        document.getElementById("wordToFreqOutput").textContent =
+          "⚠ التردد الناتج خارج نطاق النظام";
+        return;
+      }
+
+      document.getElementById("wordToFreqOutput").textContent =
+        `${f.toFixed(6)} Hz`;
+
+    } catch(e){
+      document.getElementById("wordToFreqOutput").textContent = "خطأ: " + e.message;
+    }
+  }
+
+  function decodeFreq(){
+    const f0 = Number(document.getElementById("f0Input").value);
+    const df = Number(document.getElementById("dfInput").value);
+    const f = Number(document.getElementById("freqInput").value);
+
+    if (f < f0) {
+      document.getElementById("freqToWordOutput").textContent =
+        "⚠ التردد أقل من الحد الأدنى للنظام";
+      return;
+    }
+
+    const C = Math.round((f - f0) / df);
+
+    const Cmax = (BigInt(B) ** BigInt(LMAX)) - 1n;
+    if (BigInt(C) > Cmax) {
+      document.getElementById("freqToWordOutput").textContent =
+        "⚠ التردد أعلى من الحد الأقصى للنظام";
+      return;
+    }
+
+    const word = codeToWord(BigInt(C));
+    document.getElementById("freqToWordOutput").textContent = word || "—";
+  }
+
+  function copyFreq(){
+    const text = document.getElementById("wordToFreqOutput").textContent;
+    navigator.clipboard.writeText(text);
+  }
+
+  function showRange(){
+    const f0 = Number(document.getElementById("f0Input").value);
+    const df = Number(document.getElementById("dfInput").value);
+
+    const Cmax = (BigInt(B) ** BigInt(LMAX)) - 1n;
+    const fmax = f0 + Number(Cmax) * df;
+
+    document.getElementById("rangeInfo").innerHTML = `
+      <b>أصغر تردد:</b> ${f0} Hz<br>
+      <b>أكبر تردد:</b> ${fmax.toLocaleString()} Hz<br><br>
+      <b>عدد الكلمات الممكنة:</b><br>
+      ${Cmax.toLocaleString()}
+    `;
+
+    document.getElementById("rangeModal").style.display = "flex";
+  }
+
+  function closeRange(){
+    document.getElementById("rangeModal").style.display = "none";
+  }
+</script>
+
+</body>
+</html>
