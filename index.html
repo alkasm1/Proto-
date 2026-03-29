@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -33,12 +32,6 @@
       margin-bottom: 8px;
       font-size: 1.1rem;
       color: #e5e7eb;
-    }
-    p {
-      margin-top: 0;
-      margin-bottom: 12px;
-      font-size: 0.9rem;
-      color: #9ca3af;
     }
     label {
       display: block;
@@ -167,7 +160,7 @@
     }
     let C = 0n;
     for (let i = 0; i < LMAX; i++){
-      C += BigInt(c[i])  (BigInt(B) * BigInt(i));
+      C += BigInt(c[i]) * (BigInt(B) ** BigInt(i));
     }
     return C;
   }
@@ -195,7 +188,7 @@
       const C = wordToCode(word);
       const f = f0 + Number(C) * df;
       document.getElementById("wordToFreqOutput").textContent =
-        ${f.toFixed(6)} Hz;
+        `${f.toFixed(6)} Hz`;
     } catch(e){
       document.getElementById("wordToFreqOutput").textContent = "خطأ: " + e.message;
     }
@@ -219,4 +212,3 @@
 
 </body>
 </html>
-`
