@@ -41,7 +41,7 @@
       font-size: 0.95rem;
     }
 
-    textarea {
+    input, textarea {
       width: 100%;
       padding: 10px;
       margin-top: 6px;
@@ -50,6 +50,9 @@
       background: #0d1117;
       color: #e6edf3;
       font-size: 1rem;
+    }
+
+    textarea {
       height: 120px;
       resize: vertical;
     }
@@ -106,13 +109,6 @@
       background: #21262d;
       color: #79c0ff;
     }
-
-    .footer {
-      text-align: center;
-      margin-top: 30px;
-      color: #6e7681;
-      font-size: 0.9rem;
-    }
   </style>
 </head>
 
@@ -145,21 +141,14 @@
         <div class="output" id="decodeOutput">—</div>
       </div>
 
-    </div>
+    <h2>م: رأفت عمر </h2>
 
-    <div class="footer">
-      م: رأفت عمر
     </div>
-
   </div>
 
 <script>
   const B = 32;
   const LMAX = 5;
-
-  // الإعدادات المثبتة داخليًا
-  const f0 = 100000;
-  const df = 1;
 
   const indexToChar = {
     0:"",1:"ا",2:"ب",3:"ت",4:"ث",5:"ج",6:"ح",7:"خ",
@@ -211,7 +200,10 @@
   }
 
   function encodeSentence(){
+    const f0 = Number(document.getElementById("f0Input").value);
+    const df = Number(document.getElementById("dfInput").value);
     const sentence = document.getElementById("sentenceInput").value.trim();
+
     const words = sentence.split(/\s+/);
     let allFreqs = [];
 
@@ -250,7 +242,10 @@
   }
 
   function decodeFreqList(){
+    const f0 = Number(document.getElementById("f0Input").value);
+    const df = Number(document.getElementById("dfInput").value);
     const input = document.getElementById("freqListInput").value.trim();
+
     const lines = input.split(/\n+/);
     const words = [];
 
